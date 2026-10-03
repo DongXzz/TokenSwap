@@ -61,6 +61,11 @@
     .demo-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.25rem 1.5rem; margin-top: 0.75rem; color: var(--text); }
     .demo-note { margin-top: 1rem; font-size: 0.95rem; color: var(--muted); }
     .kf { color: var(--gap); }
+    .swap-flow { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+    .swap-arrow { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; min-width: 110px; }
+    .swap-arrow-label { font-size: 0.8rem; font-weight: 700; color: var(--accent); letter-spacing: 0.02em; }
+    .swap-arrow-line { position: relative; width: 100%; height: 2px; background: var(--accent); }
+    .swap-arrow-line::after { content: ""; position: absolute; right: -1px; top: -4px; border-left: 8px solid var(--accent); border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
     .demo-opts .is-answer { color: var(--ink); font-weight: 600; }
     .demo-result { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
     .dr-num { display: flex; align-items: baseline; gap: 0.35rem; font-family: 'Tinos', 'Times New Roman', serif; color: var(--gap); line-height: 1; }
@@ -201,8 +206,12 @@
   <div class="hero-body">
     <div class="container is-max-desktop">
       <h2 class="title is-3 has-text-centered">Same Question, Two Modalities</h2>
-      <div class="buttons has-addons is-centered" role="group" aria-label="Input modality">
+      <p class="has-text-centered" style="color:var(--muted);margin:-0.75rem 0 1.25rem;">
+        TokenSwap replaces textual concepts with semantically aligned images.
+      </p>
+      <div class="swap-flow" role="group" aria-label="Input modality">
         <button type="button" class="button is-rounded" id="mode-text">Text-only</button>
+        <span class="swap-arrow" aria-hidden="true"><span class="swap-arrow-label">TokenSwap</span><span class="swap-arrow-line"></span></span>
         <button type="button" class="button is-rounded is-dark is-selected" id="mode-img">Image-interleaved</button>
       </div>
       <div class="demo-card">
