@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="TokenSwap: Benchmarking and Reducing the Modality Gap in Multimodal LLMs (NeurIPS 2026).">
+  <meta name="keywords" content="TokenSwap, modality gap, multimodal LLM, MLLM, benchmark, MMLU">
+  <title>TokenSwap</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&family=Tinos:wght@400;700&family=Castoro&display=swap" rel="stylesheet">
+  <!--BULMA--><link rel="stylesheet" href="./static/css/bulma.min.css"><!--/BULMA-->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/js/all.min.js"></script>
+
+  <style>
+    /* Palette follows the paper's figures (seaborn deep): blue = image-interleaved / accent, red = modality gap. */
+    :root {
+      color-scheme: light;
+      --ink: #1f2633;        /* headings */
+      --text: #3b4250;       /* body */
+      --muted: #6b7382;
+      --line: #e3e7ee;
+      --band: #f4f6fa;       /* light section bands */
+      --accent: #3a5a98;     /* deep blue, links + highlights */
+      --accent-soft: #e9eef8;
+      --gap: #c44e52;        /* seaborn red, same as figures */
+      --btn: #1f2633;
+    }
+    body { font-family: 'Noto Sans', 'Google Sans', 'Helvetica Neue', Arial, sans-serif; background: #ffffff; color: var(--text); }
+    .publication-title, .publication-authors, .title, .subtitle { font-family: 'Google Sans', 'Noto Sans', 'Helvetica Neue', Arial, sans-serif; }
+    .publication-title { color: var(--ink); font-family: 'Tinos', 'Times New Roman', Times, serif !important; font-weight: 700; letter-spacing: -0.005em; }
+    .author-block { display: inline-block; margin: 0 0.25rem; }
+    .publication-authors { color: var(--ink); }
+    .publication-affil { color: var(--text); }
+    .publication-venue { color: var(--gap); font-weight: 700; margin-top: 0.5rem; }
+    .link-block a { margin: 5px 2px; }
+    .button.is-dark[disabled] { opacity: 0.45; }
+    .teaser .hero-body { padding-top: 0; padding-bottom: 2.5rem; }
+    .figure-img { width: 100%; height: auto; display: block; }
+    .figure-img.is-medium { max-width: 820px; margin: 0 auto; }
+    .fig-caption { font-size: 0.95rem; color: var(--muted); margin-top: 0.75rem; text-align: left; }
+    .fig-caption b { color: var(--ink); }
+    .content pre { background: var(--band); color: var(--ink); border-radius: 6px; }
+    .section-box { padding-bottom: 1.5rem; }
+    .is-max-desktop { max-width: 960px !important; }
+
+    /* stats */
+    .stat-num { font-family: 'Google Sans', 'Noto Sans', sans-serif; font-size: 2rem; font-weight: 700; color: var(--ink); line-height: 1.1; font-variant-numeric: tabular-nums; }
+    .stat-num.is-gap { color: var(--gap); }
+    .stat-label { font-size: 0.9rem; color: var(--muted); }
+
+    /* swap demo */
+    .demo-card { background: #fff; border-radius: 10px; border: 1px solid var(--line); padding: 1.5rem 1.75rem; text-align: left; }
+    .demo-q { font-size: 1.08rem; line-height: 2.25; color: var(--ink); }
+    .demo-q .scn { font-weight: 600; color: var(--muted); }
+    .swap .word { background: var(--accent-soft); color: var(--accent); padding: 1px 5px; border-radius: 4px; font-weight: 500; }
+    .swap img { display: none; height: 2.3em; width: auto; vertical-align: middle; margin: 0 2px; border-radius: 4px; border: 1px solid var(--line); }
+    .is-interleaved .swap .word { display: none; }
+    .is-interleaved .swap img { display: inline-block; animation: pop .25s ease both; }
+    @keyframes pop { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
+    @media (prefers-reduced-motion: reduce) { .is-interleaved .swap img { animation: none; } }
+    .demo-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.25rem 1.5rem; margin-top: 0.75rem; color: var(--text); }
+    .demo-note { margin-top: 1rem; font-size: 0.95rem; color: var(--muted); }
+    .kf { color: var(--gap); }
+    .demo-opts .is-answer { color: var(--ink); font-weight: 600; }
+    .demo-result { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
+    .dr-num { display: flex; align-items: baseline; gap: 0.35rem; font-family: 'Tinos', 'Times New Roman', serif; color: var(--gap); line-height: 1; }
+    .dr-num span { font-size: 3.4rem; font-weight: 700; }
+    .dr-num small { font-size: 1.4rem; color: var(--muted); font-weight: 700; }
+    .dr-text { min-width: 0; }
+    .dr-head { font-size: 1.15rem; font-weight: 600; color: var(--ink); margin-bottom: 0.4rem; }
+    .dr-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; }
+    .pill { display: inline-block; padding: 0.2rem 0.75rem; border-radius: 999px; font-size: 0.9rem; font-weight: 600; }
+    .pill.is-right { background: #e7f3ec; color: #2f7a4f; }
+    .pill.is-wrong { background: #f9e9e9; color: var(--gap); }
+    .dr-arrow { color: var(--muted); font-weight: 700; }
+
+
+    /* leaderboard */
+    .lb-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+    .lb-wrap .table { margin-bottom: 0; min-width: 640px; font-variant-numeric: tabular-nums; }
+    .lb-wrap .table th { white-space: nowrap; position: sticky; top: 0; background: #fff; z-index: 1; }
+    .lb-wrap .table th a { color: var(--ink); }
+    .lb-wrap .table th a.is-active { color: var(--accent); }
+    .lb-wrap .table td { vertical-align: middle; white-space: nowrap; }
+    .lb-wrap .table td.num, .lb-wrap .table th.num { text-align: right; }
+    .lb-wrap .table td.gapv { color: var(--gap); font-weight: 600; }
+    .lb-scroll { max-height: 640px; overflow-y: auto; }
+    .track { position: relative; height: 16px; min-width: 220px; }
+    .track .axis { position: absolute; left: 0; right: 0; top: 7.5px; height: 1px; background: var(--line); }
+    .track .seg { position: absolute; top: 6.5px; height: 3px; background: var(--gap); opacity: 0.75; border-radius: 2px; }
+    .track .p { position: absolute; top: 2px; width: 12px; height: 12px; border-radius: 50%; transform: translateX(-50%); }
+    .track .p.t { border: 2px solid var(--ink); background: #fff; }
+    .track .p.i { background: var(--accent); }
+    .ticks { position: relative; height: 1rem; font-size: 0.7rem; color: var(--muted); font-weight: 400; }
+    .ticks span { position: absolute; transform: translateX(-50%); }
+    .lb-legend { font-size: 0.85rem; color: var(--muted); display: flex; flex-wrap: wrap; gap: 0.25rem 1.25rem; justify-content: center; margin: 0.75rem 0; }
+    .lb-legend span { display: inline-flex; align-items: center; gap: 0.4rem; }
+    .lg-dot { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+    .lg-dot.t { border: 2px solid var(--ink); }
+    .lg-dot.i { background: var(--accent); }
+    .lg-bar { width: 18px; height: 3px; background: var(--gap); display: inline-block; }
+    .lb-summary { font-size: 0.92rem; color: var(--muted); margin-top: 0.75rem; }
+    .buttons.is-centered .button { margin-bottom: 0.4rem; }
+
+
+
+    .footer { background: var(--band); padding: 2.5rem 1.5rem 3rem; }
+    .footer .icon-link { font-size: 22px; color: var(--ink); margin: 0 0.5rem; }
+
+    @media (max-width: 768px) {
+      .publication-title { font-size: 2rem !important; }
+      .demo-card { padding: 1.1rem; }
+      .section { padding: 2.5rem 1rem; }
+    }
+  
+    /* Bulma overrides */
+    a { color: var(--accent); }
+    a:hover { color: var(--ink); }
+    .title { color: var(--ink); }
+    .subtitle { color: var(--text); }
+    .content { color: var(--text); }
+    .button.is-dark { background-color: var(--btn); border-color: transparent; color: #fff; }
+    .button.is-dark:hover { background-color: var(--accent); color: #fff; }
+    .button { border-color: var(--line); color: var(--text); }
+    .button:hover { border-color: var(--accent); color: var(--accent); }
+    .hero.is-light { background-color: var(--band); }
+    .tag.is-info.is-light { background-color: var(--accent-soft); color: var(--accent); }
+    .tabs.is-toggle a { border-color: var(--line); color: var(--text); }
+    .tabs.is-toggle li.is-active a { background-color: var(--btn); border-color: var(--btn); color: #fff; }
+    .table { color: var(--text); }
+    .table td, .table th { border-color: var(--line); }
+    .table.is-hoverable tbody tr:not(.is-selected):hover { background-color: var(--band); }
+    .table thead th { color: var(--ink); }
+    .demo-card, .lb-wrap { box-shadow: 0 1px 2px rgba(31, 38, 51, 0.04); }
+    .footer { border-top: 1px solid var(--line); }
+    .footer .content { color: var(--muted); }
+    .stat-num.is-gap { color: var(--gap); }
+    .demo-note b, .fig-caption b, .lb-summary b { color: var(--ink); }
+    .track .p.t { border-color: var(--ink); }
+    .track .seg { opacity: 0.85; }
+</style>
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">TokenSwap: Benchmarking and Reducing the Modality Gap in Multimodal LLMs</h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block"><a href="https://dongxzz.github.io/website/">Andong Hua</a><sup>1</sup>,</span>
+            <span class="author-block">Colton Bishop<sup>2</sup>,</span>
+            <span class="author-block">Igor Mordatch<sup>2</sup>,</span>
+            <span class="author-block">Arian Hosseini<sup>2</sup>,</span>
+            <span class="author-block">Jindong Gu<sup>2</sup>,</span>
+            <span class="author-block">Aleksandra Faust<sup>2</sup>,</span>
+            <span class="author-block">Rebecca Roelofs<sup>2</sup>,</span>
+            <span class="author-block">Yao Qin<sup>1,2</sup></span>
+          </div>
+          <div class="is-size-5 publication-authors publication-affil">
+            <span class="author-block"><sup>1</sup>University of California, Santa Barbara</span>
+            <span class="author-block"><sup>2</sup>Google DeepMind</span>
+          </div>
+          <div class="is-size-5 publication-venue">NeurIPS 2026</div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <span class="link-block">
+                <a href="https://arxiv.org/abs/2607.28640" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fas fa-file-pdf"></i></span><span>Paper</span>
+                </a>
+              </span>
+              <!-- TODO: code link -->
+              <span class="link-block">
+                <a class="external-link button is-normal is-rounded is-dark" disabled>
+                  <span class="icon"><i class="fab fa-github"></i></span><span>Code</span>
+                </a>
+              </span>
+              <!-- TODO: HuggingFace link -->
+              <span class="link-block">
+                <a class="external-link button is-normal is-rounded is-dark" disabled>
+                  <span class="icon">🤗</span><span>HuggingFace</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="#BibTeX" class="button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fas fa-quote-right"></i></span><span>BibTeX</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Interactive example -->
+<section class="hero is-light is-small">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Same Question, Two Modalities</h2>
+      <div class="buttons has-addons is-centered" role="group" aria-label="Input modality">
+        <button type="button" class="button is-rounded" id="mode-text">Text-only</button>
+        <button type="button" class="button is-rounded is-dark is-selected" id="mode-img">Image-interleaved</button>
+      </div>
+      <div class="demo-card">
+        <div class="demo-q is-interleaved" id="demo-q">
+          For which of these two scenarios does the main character (who uses I/me/my) do something clearly morally
+          wrong, according to ordinary moral standards in the US as of 2020?
+          <span class="scn">Scenario 1 |</span> When I play
+          <span class="swap"><span class="word">cards</span><img src="./assets/concept_cards.jpg" alt="cards"></span>,
+          I palm the
+          <span class="swap"><span class="word">aces</span><img src="./assets/concept_aces.jpg" alt="aces"></span>.
+          <span class="scn">Scenario 2 |</span> I filled up the
+          <span class="swap"><span class="word">gas tank</span><img src="./assets/concept_gas_tank.jpg" alt="gas tank"></span>
+          with gasoline.
+        </div>
+        <div class="demo-opts">
+          <span>A. Wrong, Wrong</span><span class="is-answer">B. Wrong, Not wrong ✓</span><span>C. Not wrong, Wrong</span><span>D. Not wrong, Not wrong</span>
+        </div>
+        <div class="demo-result">
+          <div class="dr-num"><span>11</span><small>of 42</small></div>
+          <div class="dr-text">
+            <p class="dr-head">MLLMs flip from right to wrong</p>
+            <p class="dr-flow">
+              <span class="pill is-right">✓ Correct on text-only</span>
+              <span class="dr-arrow" aria-hidden="true">→</span>
+              <span class="pill is-wrong">✗ Wrong on image-interleaved</span>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Teaser -->
+<section class="hero teaser" style="padding-top:3rem;">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <h2 class="title is-3 has-text-centered">A Pervasive Modality Gap</h2>
+      <p class="has-text-centered" style="color:var(--muted);margin:-0.75rem 0 1.5rem;">
+        Every model performs worse on image-interleaved inputs than on text-only inputs.
+      </p>
+      <img class="figure-img" src="./assets/fig1_overview.png" alt="Text accuracy versus image-interleaved accuracy for 42 MLLMs; every model falls below the y = x line">
+      <h2 class="subtitle has-text-centered" style="margin-top:1.25rem;">
+        Across <b>42 MLLMs</b>, we observe a pervasive modality gap, with performance decreasing by
+        <b>4.2% to 47.4%</b> when moving from text-only to image-interleaved inputs.
+      </h2>
+    </div>
+  </div>
+</section>
+
+<!-- Abstract -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Multimodal large language models (MLLMs) should exhibit cross-modal consistency, generating consistent responses given semantically equivalent inputs across modalities. However, we observe a systematic discrepancy in model predictions under such cross-modal variations. Specifically, we define the <b>modality gap</b> as the difference in model performance under semantically equivalent textual and multimodal inputs. We introduce TokenSwap, a method that constructs such inputs by replacing textual concepts with semantically aligned images, resulting in sequences where visual tokens are interleaved with text tokens. Based on TokenSwap, we transform existing text-based benchmarks (e.g., MMLU) into image-interleaved counterparts, resulting in TokenSwap-Bench. Across 42 MLLMs, we observe a pervasive modality gap, with performance decreasing by 4.2% to 47.4% when moving from text-only to image-interleaved inputs, averaging 19.6% ± 3.3% across models. Notably, reasoning models exhibit consistently smaller gaps, achieving an average gap of 10.1% compared to 25.5% for non-reasoning models, suggesting greater robustness in multimodal reasoning across equivalent textual and visual representations. In contrast, neither prompting strategies nor scaling training compute alone reliably reduces the modality gap. Finally, we demonstrate that incorporating TokenSwap during training effectively mitigates this gap, improving cross-modal alignment while preserving strong text-only and vision-language model performance.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Method -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered has-text-centered">
+      <div class="column">
+        <h2 class="title is-3">Quantifying Modality Gap: TokenSwap-Bench</h2>
+        <img class="figure-img" src="./assets/fig2_pipeline.png" alt="TokenSwap pipeline: concept extraction, visual concept rendering, and replacement filtering">
+        <div class="content has-text-justified" style="margin-top:1.5rem;">
+          <p>
+            Rather than converting entire inputs into images (e.g., rendering text as images), TokenSwap operates at the
+            <b>concept level</b>: it replaces individual textual concepts with semantically aligned natural images while
+            preserving the surrounding context and structure.
+          </p>
+          <p>
+            We apply TokenSwap to MMLU to construct TokenSwap-Bench, a benchmark specifically designed to quantify the
+            modality gap. The final TokenSwap-Bench contains <b>1,516 samples</b> with <b>6,946 image replacements</b>,
+            averaging 4.58 replacements per sample.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Leaderboard -->
+<section class="section" style="padding-top:1rem;">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Analyzing Modality Gap: Results and Insights</h2>
+
+    <nav class="level is-mobile" style="margin:1.5rem 0 2rem;">
+      <div class="level-item has-text-centered"><div><p class="stat-num">42</p><p class="stat-label">MLLMs evaluated</p></div></div>
+      <div class="level-item has-text-centered"><div><p class="stat-num is-gap">19.6%</p><p class="stat-label">average gap</p></div></div>
+      <div class="level-item has-text-centered"><div><p class="stat-num is-gap">10.1%</p><p class="stat-label">reasoning models</p></div></div>
+      <div class="level-item has-text-centered"><div><p class="stat-num is-gap">25.5%</p><p class="stat-label">non-reasoning models</p></div></div>
+    </nav>
+
+    <div class="buttons are-small is-centered" id="fam-filter" role="group" aria-label="Model family"></div>
+    <div class="buttons are-small is-centered" id="type-filter" role="group" aria-label="Model type">
+      <button type="button" class="button is-rounded is-dark" data-type="all">All types</button>
+      <button type="button" class="button is-rounded" data-type="r">Reasoning</button>
+      <button type="button" class="button is-rounded" data-type="n">Non-reasoning</button>
+    </div>
+    <div class="lb-legend">
+      <span><i class="lg-dot t"></i>Text accuracy</span>
+      <span><i class="lg-dot i"></i>Image-interleaved accuracy</span>
+      <span><i class="lg-bar"></i>Modality gap</span>
+    </div>
+
+    <div class="lb-wrap"><div class="lb-scroll">
+      <table class="table is-fullwidth is-hoverable is-narrow">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th><a href="#" data-sort="name">Model</a></th>
+            <th style="width:42%"><div class="ticks" id="ticks" aria-hidden="true"></div></th>
+            <th class="num"><a href="#" data-sort="text">Text</a></th>
+            <th class="num"><a href="#" data-sort="img">Image</a></th>
+            <th class="num"><a href="#" data-sort="gap">Gap</a></th>
+          </tr>
+        </thead>
+        <tbody id="lb-body"></tbody>
+      </table>
+    </div></div>
+    <p class="lb-summary has-text-centered" id="lb-summary"></p>
+  </div>
+</section>
+
+<!-- Findings -->
+<section class="section" style="padding-top:1rem;">
+  <div class="container is-max-desktop">
+
+    <div class="columns is-centered">
+      <div class="column">
+        <h3 class="title is-5"><span class="kf">Key Finding 1:</span> Reasoning Models Exhibit Smaller Modality Gap; Prompting Strategies Do Not Consistently Reduce It</h3>
+        <img class="figure-img is-medium" src="./assets/fig3_reasoning_prompting.png" alt="Modality gap for reasoning vs. non-reasoning models, and under different prompting strategies">
+        <p class="fig-caption">
+          We observe a clear distinction between reasoning and non-reasoning models. On average, reasoning models exhibit
+          substantially smaller modality gaps than non-reasoning models (<b>10.1% ± 2.2% vs. 25.5% ± 3.7%</b>), a difference
+          that is statistically significant (Welch’s t-test: t = −7.48, p &lt; 0.001). In contrast, while prompting strategies
+          improve performance in both text-only and image-interleaved settings, they do not reliably reduce the modality gap.
+        </p>
+      </div>
+    </div>
+
+    <div class="columns is-centered" style="margin-top:1.5rem;">
+      <div class="column">
+        <h3 class="title is-5"><span class="kf">Key Finding 2:</span> Scaling Alone Provides Limited Improvement; Retrieval-Based Benchmarks Exhibit Larger Gap</h3>
+        <img class="figure-img is-medium" src="./assets/fig4_scaling_retrieval.png" alt="Modality gap versus training FLOPs, and retrieval vs. generation benchmarks">
+        <p class="fig-caption">
+          The correlation between training compute and modality gap is weak, with a low R² = 0.253 for the fitted regression
+          line: a <b>10× increase in training FLOPs reduces the absolute modality gap by only 2.8%</b>. Generation-based
+          benchmarks consistently achieve 4.6% higher image-interleaved accuracy on average, resulting in a smaller modality
+          gap compared to retrieval-based ones.
+        </p>
+      </div>
+    </div>
+
+    <div class="columns is-centered" style="margin-top:1.5rem;">
+      <div class="column">
+        <h3 class="title is-5"><span class="kf">Key Finding 3:</span> Complementary to Existing Benchmarks</h3>
+        <img class="figure-img is-medium" src="./assets/fig5_seam.png" alt="Correlation with SEAM on text accuracy, image accuracy, and modality gap">
+        <p class="fig-caption">
+          We observe a strong positive correlation with SEAM for both text-only and image accuracies, indicating consistent
+          performance trends across benchmarks. In contrast, the modality gap exhibits <b>near-zero correlation</b>. This
+          suggests that our benchmark captures a different, more general aspect of the modality gap, likely due to its use of
+          more diverse images.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Training -->
+<section class="hero is-light is-small">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <h2 class="title is-3 has-text-centered">Reducing Modality Gap: TokenSwap Training</h2>
+      <div class="content has-text-justified">
+        <p>
+          To mitigate the modality gap, we apply TokenSwap during training by augmenting text-only data with
+          image-interleaved counterparts constructed through visual concept substitution.
+        </p>
+      </div>
+      <img class="figure-img is-medium" src="./assets/fig6_training.png" alt="Text training vs. TokenSwap training across pre-training and post-training">
+      <p class="fig-caption">
+        <b>TokenSwap reduces the modality gap while preserving text performance.</b> For example, in post-training with
+        generated images, the gap decreases from 0.268 to 0.167.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- BibTeX -->
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>@inproceedings{hua2026tokenswap,
+  title     = {TokenSwap: Benchmarking and Reducing the Modality Gap in Multimodal LLMs},
+  author    = {Hua, Andong and Bishop, Colton and Mordatch, Igor and Hosseini, Arian and
+               Gu, Jindong and Faust, Aleksandra and Roelofs, Rebecca and Qin, Yao},
+  booktitle = {NeurIPS},
+  year      = {2026}
+}</code></pre>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="content has-text-centered">
+      <a class="icon-link" href="https://arxiv.org/abs/2607.28640" aria-label="Paper"><i class="fas fa-file-pdf"></i></a>
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content has-text-centered is-size-7">
+          <p>
+            This website is adapted from the <a href="https://github.com/nerfies/nerfies.github.io">Nerfies</a> template,
+            licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons
+            Attribution-ShareAlike 4.0 International License</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // ---- swap demo ----
+  var q = document.getElementById('demo-q');
+  var bT = document.getElementById('mode-text'), bI = document.getElementById('mode-img');
+  function setMode(img) {
+    q.classList.toggle('is-interleaved', img);
+    bI.classList.toggle('is-dark', img); bI.classList.toggle('is-selected', img);
+    bT.classList.toggle('is-dark', !img); bT.classList.toggle('is-selected', !img);
+  }
+  bT.addEventListener('click', function () { setMode(false); });
+  bI.addEventListener('click', function () { setMode(true); });
+
+  // ---- leaderboard (Table 6) ----
+  var R = new Set(['GPT-5','GPT-5.1','GPT-5.2','Gemini-2.5-Flash','Gemini-2.5-Flash-Lite','Gemini-2.5-Pro',
+    'Gemini-3-Flash','Gemini-3.1-Flash-Lite','Gemini-3.1-Pro','Claude-Haiku-4.5','Claude-Opus-4.6',
+    'Claude-Sonnet-4.6','Qwen3-VL-8B-Thinking','Qwen3-VL-4B-Thinking','GLM-4.1V-9B-Thinking','GLM-4.6V-Flash']);
+  var raw = [
+    ['GPT-4.1',.925,.761,.164],['GPT-4.1-mini',.892,.686,.206],['GPT-4o',.913,.693,.220],['GPT-4o-mini',.832,.545,.288],
+    ['GPT-5',.952,.856,.096],['GPT-5.1',.980,.903,.077],['GPT-5.2',.972,.887,.085],
+    ['Gemini-2.5-Flash',.954,.885,.070],['Gemini-2.5-Flash-Lite',.904,.766,.138],['Gemini-2.5-Pro',.968,.888,.080],
+    ['Gemini-3-Flash',.925,.884,.042],['Gemini-3.1-Flash-Lite',.954,.759,.195],['Gemini-3.1-Pro',.976,.914,.062],
+    ['Claude-Haiku-4.5',.951,.833,.118],['Claude-Opus-4.6',.984,.926,.057],['Claude-Sonnet-4.6',.979,.906,.073],
+    ['InternVL2-40B',.856,.505,.352],['InternVL2-8B',.767,.294,.474],['InternVL2-1B',.453,.184,.268],
+    ['InternVL2.5-78B',.920,.600,.320],['InternVL2.5-8B',.756,.382,.374],['InternVL2.5-1B',.460,.259,.202],
+    ['InternVL3-78B',.943,.685,.258],['InternVL3-8B',.788,.511,.276],['InternVL3-1B',.502,.284,.218],
+    ['Qwen2-VL-72B',.900,.726,.174],['Qwen2-VL-7B',.704,.481,.223],['Qwen2-VL-2B',.555,.346,.209],
+    ['Qwen2.5-VL-72B',.909,.731,.178],['Qwen2.5-VL-7B',.677,.529,.148],['Qwen2.5-VL-3B',.670,.458,.211],
+    ['Qwen3-VL-32B',.889,.690,.199],['Qwen3-VL-30B-A3B-Instruct',.852,.618,.234],['Qwen3-VL-8B',.782,.571,.211],
+    ['Qwen3-VL-8B-Thinking',.928,.808,.120],['Qwen3-VL-4B',.707,.523,.184],['Qwen3-VL-4B-Thinking',.889,.780,.109],
+    ['LLaVA-OV-72B',.909,.451,.458],['LLaVA-OV-7B',.710,.301,.409],['LLaVA-OV-0.5B',.409,.247,.162],
+    ['GLM-4.1V-9B-Thinking',.901,.740,.161],['GLM-4.6V-Flash',.932,.803,.129]
+  ];
+  function family(n) {
+    var p = [['GPT','GPT'],['Gemini','Gemini'],['Claude','Claude'],['InternVL','InternVL'],['Qwen','Qwen-VL'],['LLaVA','LLaVA-OV']];
+    for (var i = 0; i < p.length; i++) if (n.indexOf(p[i][0]) === 0) return p[i][1];
+    return 'GLM';
+  }
+  var data = raw.map(function (r) {
+    return { name: r[0], text: r[1], img: r[2], gap: r[3], fam: family(r[0]), r: R.has(r[0]) };
+  });
+  var FAMS = ['All', 'GPT', 'Gemini', 'Claude', 'Qwen-VL', 'InternVL', 'LLaVA-OV', 'GLM'];
+  var LABELS = { name: 'Model', text: 'Text', img: 'Image', gap: 'Gap' };
+  var state = { fam: 'All', type: 'all', sort: 'gap', asc: true };
+  var LO = 0.1, HI = 1.0;
+  function pos(v) { return ((v - LO) / (HI - LO) * 100).toFixed(2) + '%'; }
+  function pct(v) { return (v * 100).toFixed(1) + '%'; }
+
+  var ticks = document.getElementById('ticks');
+  [0.2, 0.4, 0.6, 0.8, 1.0].forEach(function (t) {
+    var s = document.createElement('span'); s.style.left = pos(t); s.textContent = t.toFixed(1); ticks.appendChild(s);
+  });
+  var famBox = document.getElementById('fam-filter');
+  FAMS.forEach(function (f) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'button is-rounded'; b.textContent = f === 'All' ? 'All families' : f; b.dataset.fam = f;
+    b.addEventListener('click', function () { state.fam = f; render(); });
+    famBox.appendChild(b);
+  });
+  document.querySelectorAll('#type-filter .button').forEach(function (b) {
+    b.addEventListener('click', function () { state.type = b.dataset.type; render(); });
+  });
+  document.querySelectorAll('[data-sort]').forEach(function (a) {
+    a.addEventListener('click', function (e) {
+      e.preventDefault();
+      var k = a.dataset.sort;
+      if (state.sort === k) state.asc = !state.asc;
+      else { state.sort = k; state.asc = (k === 'name' || k === 'gap'); }
+      render();
+    });
+  });
+
+  var tbody = document.getElementById('lb-body'), summary = document.getElementById('lb-summary');
+  function render() {
+    famBox.querySelectorAll('.button').forEach(function (b) { b.classList.toggle('is-dark', b.dataset.fam === state.fam); });
+    document.querySelectorAll('#type-filter .button').forEach(function (b) { b.classList.toggle('is-dark', b.dataset.type === state.type); });
+    document.querySelectorAll('[data-sort]').forEach(function (a) {
+      var on = a.dataset.sort === state.sort;
+      a.classList.toggle('is-active', on);
+      a.textContent = LABELS[a.dataset.sort] + (on ? (state.asc ? ' ▲' : ' ▼') : '');
+    });
+    var rows = data.filter(function (d) {
+      return (state.fam === 'All' || d.fam === state.fam) && (state.type === 'all' || (state.type === 'r') === d.r);
+    });
+    rows.sort(function (a, b) {
+      var k = state.sort, d = k === 'name' ? a.name.localeCompare(b.name) : a[k] - b[k];
+      return state.asc ? d : -d;
+    });
+    tbody.innerHTML = rows.map(function (d, i) {
+      return '<tr>' +
+        '<td class="has-text-grey">' + (i + 1) + '</td>' +
+        '<td><b>' + d.name + '</b>' + (d.r ? ' <span class="tag is-info is-light is-rounded">reasoning</span>' : '') + '</td>' +
+        '<td><div class="track" role="img" aria-label="text ' + pct(d.text) + ', image-interleaved ' + pct(d.img) + '">' +
+          '<div class="axis"></div>' +
+          '<div class="seg" style="left:' + pos(d.img) + ';width:calc(' + pos(d.text) + ' - ' + pos(d.img) + ')"></div>' +
+          '<div class="p i" style="left:' + pos(d.img) + '"></div>' +
+          '<div class="p t" style="left:' + pos(d.text) + '"></div>' +
+        '</div></td>' +
+        '<td class="num">' + d.text.toFixed(3) + '</td>' +
+        '<td class="num">' + d.img.toFixed(3) + '</td>' +
+        '<td class="num gapv">' + pct(d.gap) + '</td></tr>';
+    }).join('');
+    var g = rows.map(function (d) { return d.gap; });
+    summary.innerHTML = rows.length
+      ? rows.length + ' of 42 models &middot; mean gap <b>' + pct(g.reduce(function (s, x) { return s + x; }, 0) / g.length) +
+        '</b> &middot; min <b>' + pct(Math.min.apply(null, g)) + '</b> &middot; max <b>' + pct(Math.max.apply(null, g)) + '</b>'
+      : 'No models match this filter.';
+  }
+  render();
+
+})();
+</script>
+</body>
+</html>
