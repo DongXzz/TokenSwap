@@ -1,0 +1,4 @@
+task: tokenswap_text
+include: ../_default_template_yaml
+dataset_name: text
+doc_to_visual: null

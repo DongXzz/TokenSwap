@@ -1,0 +1,3 @@
+task: tokenswap_img
+include: ../_default_template_yaml
+dataset_name: img

@@ -1,0 +1,41 @@
+dataset_path: dongx1997/TokenSwap-Bench
+test_split: test
+
+output_type: generate_until
+doc_to_text: !function utils.doc_to_text
+doc_to_target: "{{['A', 'B', 'C', 'D'][answer]}}"
+doc_to_visual: !function utils.doc_to_visual
+doc_to_messages: !function utils.doc_to_messages
+
+generation_kwargs:
+  until: []
+  max_new_tokens: 2048
+  do_sample: false
+  temperature: 0
+
+# Settings used in the paper for Qwen-VL models.
+# Qwen3-VL resizes images inside the task (its processor runs with do_resize=False).
+lmms_eval_specific_kwargs:
+  default: {}
+  qwen3_vl:
+    image_pixels: 100352
+    image_factor: 32
+model_specific_generation_kwargs:
+  qwen2_5_vl:
+    max_new_tokens: 128
+
+filter_list:
+  - name: "strict-match"
+    filter:
+      - function: "regex"
+        group_select: -1
+        regex_pattern: "(?<!\\w)([ABCD])(?=[^a-zA-Z0-9]|$|\\.)"
+
+metric_list:
+  - metric: exact_match
+    aggregation: mean
+    higher_is_better: true
+    ignore_case: true
+    ignore_punctuation: true
+metadata:
+  version: 2.0
