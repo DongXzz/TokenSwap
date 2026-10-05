@@ -62,10 +62,10 @@
     .demo-note { margin-top: 1rem; font-size: 0.95rem; color: var(--muted); }
     .kf { color: var(--gap); }
     .swap-flow { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
-    .swap-arrow { display: inline-flex; flex-direction: column; align-items: center; gap: 2px; min-width: 110px; }
-    .swap-arrow-label { font-size: 0.8rem; font-weight: 700; color: var(--accent); letter-spacing: 0.02em; }
-    .swap-arrow-line { position: relative; width: 100%; height: 2px; background: var(--accent); }
-    .swap-arrow-line::after { content: ""; position: absolute; right: -1px; top: -4px; border-left: 8px solid var(--accent); border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+    .swap-arrow { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; min-width: 130px; }
+    .swap-arrow-label { font-size: 1.2rem; font-weight: 800; letter-spacing: 0.01em; color: var(--accent); }
+    .swap-arrow-line { position: relative; width: 100%; height: 3px; border-radius: 2px; background: var(--accent); }
+    .swap-arrow-line::after { content: ""; position: absolute; right: -2px; top: -5px; border-left: 10px solid var(--accent); border-top: 6.5px solid transparent; border-bottom: 6.5px solid transparent; }
     .demo-opts .is-answer { color: var(--ink); font-weight: 600; }
     .demo-result { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
     .dr-num { display: flex; align-items: baseline; gap: 0.35rem; font-family: 'Tinos', 'Times New Roman', serif; color: var(--gap); line-height: 1; }
@@ -176,15 +176,13 @@
                   <span class="icon"><i class="fas fa-file-pdf"></i></span><span>Paper</span>
                 </a>
               </span>
-              <!-- TODO: code link -->
               <span class="link-block">
-                <a class="external-link button is-normal is-rounded is-dark" disabled>
+                <a href="https://github.com/DongXzz/TokenSwap" class="external-link button is-normal is-rounded is-dark">
                   <span class="icon"><i class="fab fa-github"></i></span><span>Code</span>
                 </a>
               </span>
-              <!-- TODO: HuggingFace link -->
               <span class="link-block">
-                <a class="external-link button is-normal is-rounded is-dark" disabled>
+                <a href="https://huggingface.co/datasets/dongx1997/TokenSwap-Bench" class="external-link button is-normal is-rounded is-dark">
                   <span class="icon">🤗</span><span>HuggingFace</span>
                 </a>
               </span>
@@ -206,9 +204,6 @@
   <div class="hero-body">
     <div class="container is-max-desktop">
       <h2 class="title is-3 has-text-centered">Same Question, Two Modalities</h2>
-      <p class="has-text-centered" style="color:var(--muted);margin:-0.75rem 0 1.25rem;">
-        TokenSwap replaces textual concepts with semantically aligned images.
-      </p>
       <div class="swap-flow" role="group" aria-label="Input modality">
         <button type="button" class="button is-rounded" id="mode-text">Text-only</button>
         <span class="swap-arrow" aria-hidden="true"><span class="swap-arrow-label">TokenSwap</span><span class="swap-arrow-line"></span></span>
@@ -428,6 +423,7 @@
   <div class="container">
     <div class="content has-text-centered">
       <a class="icon-link" href="https://arxiv.org/abs/2607.28640" aria-label="Paper"><i class="fas fa-file-pdf"></i></a>
+      <a class="icon-link" href="https://github.com/DongXzz/TokenSwap" aria-label="Code"><i class="fab fa-github"></i></a>
     </div>
     <div class="columns is-centered">
       <div class="column is-8">
