@@ -48,36 +48,9 @@
     .stat-num.is-gap { color: var(--gap); }
     .stat-label { font-size: 0.9rem; color: var(--muted); }
 
-    /* swap demo */
-    .demo-card { background: #fff; border-radius: 10px; border: 1px solid var(--line); padding: 1.5rem 1.75rem; text-align: left; }
-    .demo-q { font-size: 1.08rem; line-height: 2.25; color: var(--ink); }
-    .demo-q .scn { font-weight: 600; color: var(--muted); }
-    .swap .word { background: var(--accent-soft); color: var(--accent); padding: 1px 5px; border-radius: 4px; font-weight: 500; }
-    .swap img { display: none; height: 2.3em; width: auto; vertical-align: middle; margin: 0 2px; border-radius: 4px; border: 1px solid var(--line); }
-    .is-interleaved .swap .word { display: none; }
-    .is-interleaved .swap img { display: inline-block; animation: pop .25s ease both; }
-    @keyframes pop { from { opacity: 0; transform: scale(.7); } to { opacity: 1; transform: none; } }
-    @media (prefers-reduced-motion: reduce) { .is-interleaved .swap img { animation: none; } }
-    .demo-opts { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.25rem 1.5rem; margin-top: 0.75rem; color: var(--text); }
-    .demo-note { margin-top: 1rem; font-size: 0.95rem; color: var(--muted); }
+    /* teaser gif */
+    .teaser-gif { display: block; width: 100%; max-width: 560px; height: auto; margin: 0 auto; border-radius: 12px; border: 1px solid var(--line); }
     .kf { color: var(--gap); }
-    .swap-flow { display: flex; align-items: center; justify-content: center; gap: 0.75rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
-    .swap-arrow { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; min-width: 130px; }
-    .swap-arrow-label { font-size: 1.2rem; font-weight: 800; letter-spacing: 0.01em; color: var(--accent); }
-    .swap-arrow-line { position: relative; width: 100%; height: 3px; border-radius: 2px; background: var(--accent); }
-    .swap-arrow-line::after { content: ""; position: absolute; right: -2px; top: -5px; border-left: 10px solid var(--accent); border-top: 6.5px solid transparent; border-bottom: 6.5px solid transparent; }
-    .demo-opts .is-answer { color: var(--ink); font-weight: 600; }
-    .demo-result { display: flex; flex-wrap: wrap; align-items: center; gap: 0.75rem 1.5rem; margin-top: 1.25rem; padding-top: 1.25rem; border-top: 1px solid var(--line); }
-    .dr-num { display: flex; align-items: baseline; gap: 0.35rem; font-family: 'Tinos', 'Times New Roman', serif; color: var(--gap); line-height: 1; }
-    .dr-num span { font-size: 3.4rem; font-weight: 700; }
-    .dr-num small { font-size: 1.4rem; color: var(--muted); font-weight: 700; }
-    .dr-text { min-width: 0; }
-    .dr-head { font-size: 1.15rem; font-weight: 600; color: var(--ink); margin-bottom: 0.4rem; }
-    .dr-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.4rem 0.6rem; }
-    .pill { display: inline-block; padding: 0.2rem 0.75rem; border-radius: 999px; font-size: 0.9rem; font-weight: 600; }
-    .pill.is-right { background: #e7f3ec; color: #2f7a4f; }
-    .pill.is-wrong { background: #f9e9e9; color: var(--gap); }
-    .dr-arrow { color: var(--muted); font-weight: 700; }
 
 
     /* leaderboard */
@@ -114,7 +87,6 @@
 
     @media (max-width: 768px) {
       .publication-title { font-size: 2rem !important; }
-      .demo-card { padding: 1.1rem; }
       .section { padding: 2.5rem 1rem; }
     }
   
@@ -136,11 +108,11 @@
     .table td, .table th { border-color: var(--line); }
     .table.is-hoverable tbody tr:not(.is-selected):hover { background-color: var(--band); }
     .table thead th { color: var(--ink); }
-    .demo-card, .lb-wrap { box-shadow: 0 1px 2px rgba(31, 38, 51, 0.04); }
+    .lb-wrap { box-shadow: 0 1px 2px rgba(31, 38, 51, 0.04); }
     .footer { border-top: 1px solid var(--line); }
     .footer .content { color: var(--muted); }
     .stat-num.is-gap { color: var(--gap); }
-    .demo-note b, .fig-caption b, .lb-summary b { color: var(--ink); }
+    .fig-caption b, .lb-summary b { color: var(--ink); }
     .track .p.t { border-color: var(--ink); }
     .track .seg { opacity: 0.85; }
 </style>
@@ -199,43 +171,12 @@
   </div>
 </section>
 
-<!-- Interactive example -->
+<!-- Teaser GIF -->
 <section class="hero is-light is-small">
   <div class="hero-body">
     <div class="container is-max-desktop">
       <h2 class="title is-3 has-text-centered">Same Question, Two Modalities</h2>
-      <div class="swap-flow" role="group" aria-label="Input modality">
-        <button type="button" class="button is-rounded" id="mode-text">Text-only</button>
-        <span class="swap-arrow" aria-hidden="true"><span class="swap-arrow-label">TokenSwap</span><span class="swap-arrow-line"></span></span>
-        <button type="button" class="button is-rounded is-dark is-selected" id="mode-img">Image-interleaved</button>
-      </div>
-      <div class="demo-card">
-        <div class="demo-q is-interleaved" id="demo-q">
-          For which of these two scenarios does the main character (who uses I/me/my) do something clearly morally
-          wrong, according to ordinary moral standards in the US as of 2020?
-          <span class="scn">Scenario 1 |</span> When I play
-          <span class="swap"><span class="word">cards</span><img src="./assets/concept_cards.jpg" alt="cards"></span>,
-          I palm the
-          <span class="swap"><span class="word">aces</span><img src="./assets/concept_aces.jpg" alt="aces"></span>.
-          <span class="scn">Scenario 2 |</span> I filled up the
-          <span class="swap"><span class="word">gas tank</span><img src="./assets/concept_gas_tank.jpg" alt="gas tank"></span>
-          with gasoline.
-        </div>
-        <div class="demo-opts">
-          <span>A. Wrong, Wrong</span><span class="is-answer">B. Wrong, Not wrong ✓</span><span>C. Not wrong, Wrong</span><span>D. Not wrong, Not wrong</span>
-        </div>
-        <div class="demo-result">
-          <div class="dr-num"><span>11</span><small>of 42</small></div>
-          <div class="dr-text">
-            <p class="dr-head">MLLMs flip from right to wrong</p>
-            <p class="dr-flow">
-              <span class="pill is-right">✓ Correct on text-only</span>
-              <span class="dr-arrow" aria-hidden="true">→</span>
-              <span class="pill is-wrong">✗ Wrong on image-interleaved</span>
-            </p>
-          </div>
-        </div>
-      </div>
+      <img class="teaser-gif" src="./assets/tokenswap_teaser.gif" alt="A text-only question that a model answers correctly; after concepts are swapped for images, the same model answers wrong. Same meaning. Different modality. Different answer.">
     </div>
   </div>
 </section>
@@ -441,17 +382,6 @@
 
 <script>
 (function () {
-  // ---- swap demo ----
-  var q = document.getElementById('demo-q');
-  var bT = document.getElementById('mode-text'), bI = document.getElementById('mode-img');
-  function setMode(img) {
-    q.classList.toggle('is-interleaved', img);
-    bI.classList.toggle('is-dark', img); bI.classList.toggle('is-selected', img);
-    bT.classList.toggle('is-dark', !img); bT.classList.toggle('is-selected', !img);
-  }
-  bT.addEventListener('click', function () { setMode(false); });
-  bI.addEventListener('click', function () { setMode(true); });
-
   // ---- leaderboard (Table 6) ----
   var R = new Set(['GPT-5','GPT-5.1','GPT-5.2','Gemini-2.5-Flash','Gemini-2.5-Flash-Lite','Gemini-2.5-Pro',
     'Gemini-3-Flash','Gemini-3.1-Flash-Lite','Gemini-3.1-Pro','Claude-Haiku-4.5','Claude-Opus-4.6',
