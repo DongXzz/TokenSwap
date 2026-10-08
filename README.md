@@ -15,7 +15,7 @@
 
 ---
 
-<p align="center"><img src="assets/tokenswap_example.png" width="90%"></p>
+<p align="center"><img src="assets/tokenswap_teaser.gif" width="60%" alt="Same question as text vs. with images: the model answer flips from right to wrong"></p>
 
 <p align="center"><img src="assets/fig1_overview.png" width="80%"></p>
 
